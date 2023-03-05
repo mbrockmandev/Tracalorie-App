@@ -6,7 +6,7 @@ class CalorieTracker {
     this._workouts = [];
 
     // brad manually calls methods here instead
-    this._renderStats();
+    this._renderUI();
   }
 
   // Public Methods/API //
@@ -14,33 +14,51 @@ class CalorieTracker {
   addMeal(meal) {
     this._meals.push(meal);
     this._totalCalories += meal.calories;
+    this._displayNewMeal(meal);
 
-    this._renderStats();
+    this._renderUI();
   }
 
-  removeMeal(meal) {}
+  removeMeal(id) {
+    const index = this._meals.findIndex((meal) => meal.id === id);
+
+    if (index !== -1) {
+      const meal = this._meals[index];
+      this._totalCalories -= meal.calories;
+      this._meals.splice(index, 1);
+      this._renderUI();
+    }
+  }
 
   addWorkout(workout) {
     this._workouts.push(workout);
     this._totalCalories -= workout.calories;
+    this._displayNewWorkout(workout);
 
-    this._renderStats();
+    this._renderUI();
   }
 
-  removeWorkout(workout) {
-    this._renderStats();
+  removeWorkout(id) {
+    const index = this._workouts.findIndex((workout) => workout.id === id);
+
+    if (index !== -1) {
+      const workout = this._workouts[index];
+      this._totalCalories += workout.calories;
+      this._workouts.splice(index, 1);
+      this._renderUI();
+    }
   }
 
   resetDay() {
-    this._renderStats();
+    this._renderUI();
   }
 
   setLimit() {
-    this._renderStats();
+    this._renderUI();
   }
 
   loadItems() {
-    this._renderStats();
+    this._renderUI();
   }
 
   // Private Methods //
@@ -103,9 +121,51 @@ class CalorieTracker {
     const width = Math.min(pct, 100);
     progressEl.style.width = `${width}%`;
   }
-  _displayNewMeal() {}
-  _displayNewWorkout() {}
-  _renderStats() {
+  _displayNewMeal(meal) {
+    const mealsEl = document.getElementById('meal-items');
+    const mealEl = document.createElement('div');
+    mealEl.classList.add('card', 'my-2');
+    mealEl.setAttribute('data-id', meal.id);
+    mealEl.innerHTML = `
+    <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between">
+      <h4 class="mx-1">${meal.name}</h4>
+      <div
+        class="fs-1 bg-primary text-white text-center rounded-2 px-2 px-sm-5"
+      >
+        ${meal.calories}
+      </div>
+      <button class="delete btn btn-danger btn-sm mx-2">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+    `;
+    mealsEl.appendChild(mealEl);
+  }
+  _displayNewWorkout(workout) {
+    const workoutsEl = document.getElementById('workout-items');
+    const workoutEl = document.createElement('div');
+    workoutEl.classList.add('card', 'my-2');
+    workoutEl.setAttribute('data-id', workout.id);
+    workoutEl.innerHTML = `
+    <div class="card-body">
+    <div class="d-flex align-items-center justify-content-between">
+      <h4 class="mx-1">${workout.name}</h4>
+      <div
+        class="fs-1 bg-secondary text-white text-center rounded-2 px-2 px-sm-5"
+      >
+        ${workout.calories}
+      </div>
+      <button class="delete btn btn-danger btn-sm mx-2">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+    `;
+    workoutsEl.appendChild(workoutEl);
+  }
+  _renderUI() {
     this._displayCaloriesTotal();
     this._displayCalorieLimit();
     this._displayCaloriesConsumed();
@@ -143,6 +203,14 @@ class App {
     document
       .getElementById('workout-form')
       .addEventListener('submit', this._newItem.bind(this, 'workout'));
+
+    document
+      .getElementById('meal-items')
+      .addEventListener('click', this._removeItem.bind(this, 'meal'));
+
+    document
+      .getElementById('workout-items')
+      .addEventListener('click', this._removeItem.bind(this, 'workout'));
   }
 
   _newItem(type, e) {
@@ -176,6 +244,23 @@ class App {
     const bsCollapse = new bootstrap.Collapse(collapseItem, {
       toggle: true,
     });
+  }
+
+  _removeItem(type, e) {
+    if (
+      e.target.classList.contains('delete') ||
+      e.target.classList.contains('fa-xmark')
+    ) {
+      if (confirm('Are you sure?')) {
+        const id = e.target.closest('.card').getAttribute('data-id');
+
+        type === 'meal'
+          ? this._tracker.removeMeal(id)
+          : this._tracker.removeWorkout(id);
+
+        e.target.closest('.card').remove();
+      }
+    }
   }
 }
 
